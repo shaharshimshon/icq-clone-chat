@@ -19,7 +19,11 @@
   </div>
 
   <script type="module">
-    import { auth, onAuthStateChanged, updateUserProfile } from './fireball.js';
+    import {
+      auth,
+      onAuthStateChanged,
+      updateUserProfile
+    } from './fireball.js';
 
     const nameInput = document.getElementById('display-name');
     const photoInput = document.getElementById('profile-photo');
@@ -37,7 +41,7 @@
       }
     });
 
-    // Fill current data
+    // Load user data
     onAuthStateChanged(auth, (user) => {
       if (!user) window.location.href = "auth.html";
       nameInput.value = user.displayName || "";
@@ -47,9 +51,14 @@
       }
     });
 
+    // Update button
     updateBtn.onclick = async () => {
-      await updateUserProfile(nameInput.value, selectedFile);
-      alert("Profile updated!");
+      try {
+        await updateUserProfile(nameInput.value, selectedFile);
+        alert("Profile updated!");
+      } catch (e) {
+        alert("Error updating profile: " + e.message);
+      }
     };
   </script>
 </body>
