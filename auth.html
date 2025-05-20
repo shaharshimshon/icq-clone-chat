@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login or Register</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Login / Register</h2>
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button id="register-btn">Register</button>
+    <button id="login-btn">Login</button>
+    <a href="index.html" class="link">Back to Home</a>
+  </div>
+  <script type="module" src="firebase.js"></script>
+  <script type="module">
+    import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from './firebase.js';
+
+    document.getElementById('register-btn').onclick = () => {
+      createUserWithEmailAndPassword(auth, email.value, password.value).catch(e => alert(e.message));
+    };
+    document.getElementById('login-btn').onclick = () => {
+      signInWithEmailAndPassword(auth, email.value, password.value)
+        .then(() => window.location.href = "chat.html")
+        .catch(e => alert(e.message));
+    };
+  </script>
+</body>
+</html>
