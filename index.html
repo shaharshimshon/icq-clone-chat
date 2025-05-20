@@ -147,7 +147,7 @@
     const messageForm = document.getElementById("message-form");
     const messageInput = document.getElementById("message-input");
 
-    // Login/Register button handler
+    // Login/Register button handler with better error handling
     loginBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value.trim();
@@ -161,9 +161,17 @@
       } catch (err) {
         if (err.code === "auth/user-not-found") {
           // If user not found, create new user
-          await createUserWithEmailAndPassword(auth, email, password);
+          try {
+            await createUserWithEmailAndPassword(auth, email, password);
+          } catch (regErr) {
+            alert("Registration failed: " + regErr.message);
+          }
+        } else if (err.code === "auth/wrong-password") {
+          alert("Wrong password, please try again.");
+        } else if (err.code === "auth/invalid-email") {
+          alert("Invalid email format.");
         } else {
-          alert(err.message);
+          alert("Error: " + err.message);
         }
       }
     });
