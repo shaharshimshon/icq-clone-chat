@@ -19,11 +19,7 @@
   </div>
 
   <script type="module">
-    import {
-      auth,
-      onAuthStateChanged,
-      updateUserProfile
-    } from './firebase.js';
+    import { auth, onAuthStateChanged, updateUserProfile } from './firebase.js';
 
     const nameInput = document.getElementById('display-name');
     const photoInput = document.getElementById('profile-photo');
@@ -41,9 +37,9 @@
       }
     });
 
-    // Load user data
+    // Load current user info
     onAuthStateChanged(auth, (user) => {
-      if (!user) window.location.href = "auth.html";
+      if (!user) return window.location.href = "auth.html";
       nameInput.value = user.displayName || "";
       if (user.photoURL) {
         preview.src = user.photoURL;
@@ -51,15 +47,18 @@
       }
     });
 
-    // Update button
-    updateBtn.onclick = async () => {
+    // Update profile
+    updateBtn.addEventListener("click", async () => {
       try {
-        await updateUserProfile(nameInput.value, selectedFile);
-        alert("Profile updated!");
-      } catch (e) {
-        alert("Error updating profile: " + e.message);
+        const name = nameInput.value.trim();
+        await updateUserProfile(name, selectedFile);
+        alert("Profile updated successfully!");
+        selectedFile = null;
+      } catch (err) {
+        console.error(err);
+        alert("Failed to update profile. Check console for errors.");
       }
-    };
+    });
   </script>
 </body>
 </html>
