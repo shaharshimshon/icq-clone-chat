@@ -1,8 +1,30 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-storage.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from "https://www.gstatic.com/firebasejs/11.8.0/firebase-auth.js";
 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/11.8.0/firebase-storage.js";
+
+// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBDHZpDfKz711k2agTq4ekGU7-iN_p99mc",
   authDomain: "icqclone.firebaseapp.com",
@@ -13,18 +35,14 @@ const firebaseConfig = {
   measurementId: "G-HHJ3S1QCQJ"
 };
 
+// Initialize
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export {
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile,
-  collection, addDoc, query, orderBy, onSnapshot,
-  ref, uploadBytes, getDownloadURL
-};
-
-export async function updateUserProfile(name, file) {
+// Profile updater
+async function updateUserProfile(name, file) {
   let photoURL = auth.currentUser.photoURL;
 
   if (file) {
@@ -39,3 +57,23 @@ export async function updateUserProfile(name, file) {
   });
 }
 
+// Exports
+export {
+  auth,
+  db,
+  storage,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  updateUserProfile
+};
