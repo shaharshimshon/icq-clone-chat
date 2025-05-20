@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ICQ Clone Chat</title>
   <style>
-    /* CSS Styles */
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -27,8 +26,9 @@
       font-size: 16px;
     }
     #auth-container button {
-      width: 100%;
+      width: 48%;
       padding: 10px;
+      margin: 5px 1%;
       background: #0078d7;
       color: white;
       border: none;
@@ -100,10 +100,13 @@
 <body>
 
   <div id="auth-container">
-    <h2>Login</h2>
+    <h2>Welcome</h2>
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
-    <button id="login-btn">Login / Register</button>
+    <div>
+      <button id="login-btn">Login</button>
+      <button id="register-btn">Register</button>
+    </div>
   </div>
 
   <div id="chat-container">
@@ -114,7 +117,6 @@
     </form>
   </div>
 
-  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-analytics.js";
@@ -137,17 +139,16 @@
     const auth = getAuth();
     const db = getFirestore();
 
-    // Elements
     const authContainer = document.getElementById("auth-container");
     const chatContainer = document.getElementById("chat-container");
     const loginBtn = document.getElementById("login-btn");
+    const registerBtn = document.getElementById("register-btn");
     const emailInput = document.getElementById("email");
     const passwordInput = document.getElementById("password");
     const messagesDiv = document.getElementById("messages");
     const messageForm = document.getElementById("message-form");
     const messageInput = document.getElementById("message-input");
 
-    // Login/Register button handler with better error handling
     loginBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value.trim();
@@ -156,16 +157,10 @@
         return;
       }
       try {
-        // Try signing in first
         await signInWithEmailAndPassword(auth, email, password);
       } catch (err) {
         if (err.code === "auth/user-not-found") {
-          // If user not found, create new user
-          try {
-            await createUserWithEmailAndPassword(auth, email, password);
-          } catch (regErr) {
-            alert("Registration failed: " + regErr.message);
-          }
+          alert("User not found. Please register.");
         } else if (err.code === "auth/wrong-password") {
           alert("Wrong password, please try again.");
         } else if (err.code === "auth/invalid-email") {
@@ -176,21 +171,40 @@
       }
     });
 
-    // Monitor auth state
+    registerBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+      if (!email || !password) {
+        alert("Please enter email and password.");
+        return;
+      }
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        alert("Registration successful! You are now logged in.");
+      } catch (err) {
+        if (err.code === "auth/email-already-in-use") {
+          alert("Email already in use. Please login.");
+        } else if (err.code === "auth/invalid-email") {
+          alert("Invalid email format.");
+        } else if (err.code === "auth/weak-password") {
+          alert("Password should be at least 6 characters.");
+        } else {
+          alert("Error: " + err.message);
+        }
+      }
+    });
+
     onAuthStateChanged(auth, user => {
       if (user) {
-        // User logged in
         authContainer.style.display = "none";
         chatContainer.style.display = "flex";
         loadMessages();
       } else {
-        // Not logged in
         authContainer.style.display = "block";
         chatContainer.style.display = "none";
       }
     });
 
-    // Load messages and listen for updates
     function loadMessages() {
       const messagesRef = collection(db, "messages");
       const q = query(messagesRef, orderBy("createdAt"));
@@ -212,11 +226,10 @@
       });
     }
 
-    // Sending new messages
     messageForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = messageInput.value.trim();
-      if (text === "") return;
+      if (!text) return;
       await addDoc(collection(db, "messages"), {
         text,
         uid: auth.currentUser.uid,
