@@ -39,4 +39,3 @@ export async function updateUserProfile(name, file) {
   });
 }
 
-window.updateUserProfile = updateUserProfile;
