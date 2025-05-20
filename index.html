@@ -1,7 +1,328 @@
-<div id="profile-container" style="display:none; max-width:300px; margin: 20px auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.1);">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ICQ-style Chat with Profile</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f3f3f3;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh;
+  }
+  #auth-container, #chat-container, #profile-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 90%;
+    margin-top: 30px;
+  }
+  #chat-container {
+    display: none;
+    flex-direction: column;
+    height: 80vh;
+  }
+  #messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #fff;
+    border-radius: 6px;
+  }
+  .message {
+    margin: 6px 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    max-width: 80%;
+    word-wrap: break-word;
+  }
+  .self {
+    background: #0078d7;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+  }
+  .other {
+    background: #e1e1e1;
+    color: black;
+    margin-right: auto;
+    text-align: left;
+  }
+  input[type=text], input[type=email], input[type=password] {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 16px;
+  }
+  button {
+    padding: 10px 16px;
+    background: #0078d7;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  button:disabled {
+    background: #999;
+    cursor: not-allowed;
+  }
+  #open-profile-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 6px 12px;
+  }
+  #profile-container {
+    display: none;
+  }
+  #close-profile-btn {
+    background: #ccc;
+    color: black;
+    margin-left: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH CONTAINER -->
+<div id="auth-container">
+  <h2>Register / Login</h2>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button id="register-btn">Register</button>
+  <button id="login-btn">Login</button>
+</div>
+
+<!-- CHAT CONTAINER -->
+<div id="chat-container">
+  <button id="open-profile-btn">Profile</button>
+  <div id="messages"></div>
+  <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" />
+  <button id="send-btn">Send</button>
+  <button id="logout-btn" style="margin-top:10px; background:#d9534f;">Logout</button>
+</div>
+
+<!-- PROFILE CONTAINER -->
+<div id="profile-container">
   <h2>Your Profile</h2>
   <label for="display-name-input">Display Name:</label><br/>
-  <input type="text" id="display-name-input" placeholder="Enter display name" style="width:100%; padding:8px; margin:10px 0; font-size:16px;"/><br/>
-  <button id="save-profile-btn" style="padding:10px 20px; background:#0078d7; color:white; border:none; border-radius:4px; cursor:pointer;">Save</button>
-  <button id="close-profile-btn" style="padding:10px 20px; margin-left:10px; border:none; background:#ccc; border-radius:4px; cursor:pointer;">Close</button>
+  <input type="text" id="display-name-input" placeholder="Enter display name" />
+  <br />
+  <button id="save-profile-btn">Save</button>
+  <button id="close-profile-btn">Close</button>
 </div>
+
+<script type="module">
+// Firebase imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-analytics.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyBDHZpDfKz711k2agTq4ekGU7-iN_p99mc",
+  authDomain: "icqclone.firebaseapp.com",
+  projectId: "icqclone",
+  storageBucket: "icqclone.firebasestorage.app",
+  messagingSenderId: "922649039358",
+  appId: "1:922649039358:web:fbdd0a0e21d64e4d32f0af",
+  measurementId: "G-HHJ3S1QCQJ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Elements
+const authContainer = document.getElementById("auth-container");
+const chatContainer = document.getElementById("chat-container");
+const profileContainer = document.getElementById("profile-container");
+
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const registerBtn = document.getElementById("register-btn");
+const loginBtn = document.getElementById("login-btn");
+
+const messagesDiv = document.getElementById("messages");
+const messageInput = document.getElementById("message-input");
+const sendBtn = document.getElementById("send-btn");
+const logoutBtn = document.getElementById("logout-btn");
+
+const openProfileBtn = document.getElementById("open-profile-btn");
+const closeProfileBtn = document.getElementById("close-profile-btn");
+const saveProfileBtn = document.getElementById("save-profile-btn");
+const displayNameInput = document.getElementById("display-name-input");
+
+// Register user
+registerBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if (!email || !password) {
+    alert("Please enter email and password.");
+    return;
+  }
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    emailInput.value = "";
+    passwordInput.value = "";
+  } catch (error) {
+    alert("Registration error: " + error.message);
+  }
+});
+
+// Login user
+loginBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if (!email || !password) {
+    alert("Please enter email and password.");
+    return;
+  }
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    emailInput.value = "";
+    passwordInput.value = "";
+  } catch (error) {
+    alert("Login error: " + error.message);
+  }
+});
+
+// Logout user
+logoutBtn.addEventListener("click", async () => {
+  await signOut(auth);
+});
+
+// Show/hide UI based on auth state
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    authContainer.style.display = "none";
+    chatContainer.style.display = "flex";
+    profileContainer.style.display = "none";
+    loadMessages();
+  } else {
+    authContainer.style.display = "block";
+    chatContainer.style.display = "none";
+    profileContainer.style.display = "none";
+  }
+});
+
+// Send message
+sendBtn.addEventListener("click", async () => {
+  const text = messageInput.value.trim();
+  if (!text) return;
+  const user = auth.currentUser;
+  if (!user) return alert("You must be logged in.");
+
+  try {
+    await addDoc(collection(db, "messages"), {
+      text,
+      uid: user.uid,
+      timestamp: serverTimestamp(),
+    });
+    messageInput.value = "";
+  } catch (error) {
+    alert("Error sending message: " + error.message);
+  }
+});
+
+// Load and display messages
+let userDisplayNameCache = {};
+
+async function getDisplayName(uid) {
+  if (userDisplayNameCache[uid]) return userDisplayNameCache[uid];
+  const docRef = doc(db, "users", uid);
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    const name = docSnap.data().displayName || "Anonymous";
+    userDisplayNameCache[uid] = name;
+    return name;
+  }
+  return "Anonymous";
+}
+
+function loadMessages() {
+  const q = query(collection(db, "messages"), orderBy("timestamp", "asc"), limit(100));
+  onSnapshot(q, async (snapshot) => {
+    messagesDiv.innerHTML = "";
+    for (const docChange of snapshot.docChanges()) {
+      if (docChange.type === "added") {
+        const msg = docChange.doc.data();
+        const msgEl = document.createElement("div");
+        msgEl.classList.add("message");
+        if (msg.uid === auth.currentUser.uid) {
+          msgEl.classList.add("self");
+        } else {
+          msgEl.classList.add("other");
+        }
+        const displayName = await getDisplayName(msg.uid);
+        msgEl.innerHTML = `<strong>${displayName}:</strong> ${escapeHtml(msg.text)}`;
+        messagesDiv.appendChild(msgEl);
+      }
+    }
+    // Scroll to bottom
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+}
+
+// Profile screen controls
+openProfileBtn.addEventListener("click", async () => {
+  if (!auth.currentUser) return;
+  const userDocRef = doc(db, "users", auth.currentUser.uid);
+  const userDocSnap = await getDoc(userDocRef);
+  if (userDocSnap.exists()) {
+    displayNameInput.value = userDocSnap.data().displayName || "";
+  } else {
+    displayNameInput.value = "";
+  }
+  profileContainer.style.display = "block";
+  chatContainer.style.display = "none";
+});
+
+closeProfileBtn.addEventListener("click", () => {
+  profileContainer.style.display = "none";
+  chatContainer.style.display = "flex";
+});
+
+saveProfileBtn.addEventListener("click", async () => {
+  const newDisplayName = displayNameInput.value.trim();
+  if (!newDisplayName) {
+    alert("Display name cannot be empty.");
+    return;
+  }
+  try {
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    await setDoc(userDocRef, { displayName: newDisplayName }, { merge: true });
+    alert("Display name saved!");
+    userDisplayNameCache[auth.currentUser.uid] = newDisplayName; // update cache
+    profileContainer.style.display = "none";
+    chatContainer.style.display = "flex";
+  } catch (error) {
+    alert("Error saving display name: " + error.message);
+  }
+});
+
+// Helper to escape HTML to prevent XSS
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(text));
+  return div.innerHTML;
+}
+
+</script>
+
+</body>
+</html>
