@@ -1,44 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Edit Profile</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
     <h2>Edit Profile</h2>
-    <input id="display-name" type="text" placeholder="Display Name">
-    <input id="profile-photo" type="file" accept="image/*">
+    <input id="display-name" type="text" placeholder="Display Name" />
+    
+    <input id="profile-photo" type="file" accept="image/*" />
+    <img id="preview-photo" src="" alt="Preview" style="max-width: 100px; margin: 10px 0; display: none;" />
+    
     <button id="update-profile-btn">Update</button>
     <a href="chat.html" class="link">Back to Chat</a>
   </div>
-  <script type="module" src="firebase.js"></script>
-  <script type="module">
-    import { auth, storage, updateProfile, ref, uploadBytes, getDownloadURL, onAuthStateChanged } from './firebase.js';
 
-    const displayNameInput = document.getElementById('display-name');
-    const profilePhotoInput = document.getElementById('profile-photo');
+  <script type="module">
+    import { auth, onAuthStateChanged, updateUserProfile } from './fireball.js';
+
+    const nameInput = document.getElementById('display-name');
+    const photoInput = document.getElementById('profile-photo');
+    const preview = document.getElementById('preview-photo');
     const updateBtn = document.getElementById('update-profile-btn');
 
-    onAuthStateChanged(auth, user => {
+    let selectedFile = null;
+
+    // Preview selected photo
+    photoInput.addEventListener('change', (e) => {
+      selectedFile = e.target.files[0];
+      if (selectedFile) {
+        preview.src = URL.createObjectURL(selectedFile);
+        preview.style.display = "block";
+      }
+    });
+
+    // Fill current data
+    onAuthStateChanged(auth, (user) => {
       if (!user) window.location.href = "auth.html";
-      displayNameInput.value = user.displayName || "";
+      nameInput.value = user.displayName || "";
+      if (user.photoURL) {
+        preview.src = user.photoURL;
+        preview.style.display = "block";
+      }
     });
 
     updateBtn.onclick = async () => {
-      const file = profilePhotoInput.files[0];
-      let photoURL = auth.currentUser.photoURL;
-      if (file) {
-        const storageRef = ref(storage, 'profiles/' + auth.currentUser.uid);
-        await uploadBytes(storageRef, file);
-        photoURL = await getDownloadURL(storageRef);
-      }
-      updateProfile(auth.currentUser, {
-        displayName: displayNameInput.value,
-        photoURL: photoURL
-      }).then(() => alert("Profile updated"));
+      await updateUserProfile(nameInput.value, selectedFile);
+      alert("Profile updated!");
     };
   </script>
 </body>
