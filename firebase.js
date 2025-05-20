@@ -23,3 +23,18 @@ export {
   collection, addDoc, query, orderBy, onSnapshot,
   ref, uploadBytes, getDownloadURL
 };
+
+export async function updateUserProfile(name, file) {
+  let photoURL = auth.currentUser.photoURL;
+
+  if (file) {
+    const storageRef = ref(storage, 'profiles/' + auth.currentUser.uid);
+    await uploadBytes(storageRef, file);
+    photoURL = await getDownloadURL(storageRef);
+  }
+
+  await updateProfile(auth.currentUser, {
+    displayName: name,
+    photoURL: photoURL
+  });
+}
