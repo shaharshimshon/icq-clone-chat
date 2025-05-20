@@ -38,3 +38,5 @@ export async function updateUserProfile(name, file) {
     photoURL: photoURL
   });
 }
+
+window.updateUserProfile = updateUserProfile;
