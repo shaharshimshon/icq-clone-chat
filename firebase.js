@@ -45,16 +45,23 @@ const storage = getStorage(app);
 async function updateUserProfile(name, file) {
   let photoURL = auth.currentUser.photoURL;
 
-  if (file) {
-    const storageRef = ref(storage, 'profiles/' + auth.currentUser.uid);
-    await uploadBytes(storageRef, file);
-    photoURL = await getDownloadURL(storageRef);
-  }
+  try {
+    if (file) {
+      const storageRef = ref(storage, 'profiles/' + auth.currentUser.uid + '/profile.jpg');
+      await uploadBytes(storageRef, file);
+      photoURL = await getDownloadURL(storageRef);
+    }
 
-  await updateProfile(auth.currentUser, {
-    displayName: name,
-    photoURL: photoURL
-  });
+    await updateProfile(auth.currentUser, {
+      displayName: name,
+      photoURL: photoURL
+    });
+
+    console.log("Profile updated:", { name, photoURL });
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+    throw error;
+  }
 }
 
 // Exports
